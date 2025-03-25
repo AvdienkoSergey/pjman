@@ -1,11 +1,11 @@
 {
   "name": "pjman",
-  "version": "0.0.0",
-  "description": "This project is a package management tool for JavaScript applications. It helps developers manage their dependencies, analyze package usage, and perform operations such as updating or deleting packages from both the terminal and the UI. Keep your package.json is fine",
+  "version": "1.0.0",
+  "description": "A package management tool for JavaScript applications that helps developers manage dependencies, analyze package usage, and perform package operations via CLI and UI",
   "main": "main.js",
   "scripts": {
     "start": "node main.js",
-    "test": "test",
+    "test": "cross-env NODE_ENV=test mocha \"**/*.test.js\"",
     "release:bootstrap": "node bin/bootstrap.js",
     "release:pr": "node bin/create-pr.js",
     "release:release": "node bin/github-release.js"
@@ -15,8 +15,27 @@
     "type": "git",
     "url": "git+https://github.com/AvdienkoSergey/pjman.git"
   },
+  "bin": {
+    "pjman": "./bin/cli.js"
+  },
+  "files": [
+    "bin/cli.js",
+    "core/",
+    "utils/",
+    "lib/",
+    "errors/",
+    "LICENSE",
+    "README.md"
+  ],
+  "engines": {
+    "node": ">=14.0.0"
+  },
   "keywords": [
-    "package.json"
+    "package.json",
+    "package-manager",
+    "dependencies",
+    "npm",
+    "cli"
   ],
   "author": "AvdienkoSA",
   "license": "MIT",
@@ -25,7 +44,13 @@
   },
   "homepage": "https://github.com/AvdienkoSergey/pjman#readme",
   "devDependencies": {
+    "@types/mocha": "^10.0.10",
+    "cross-env": "^7.0.3",
     "dotenv": "^16.4.7",
+    "mocha": "^11.1.0",
     "release-please": "^17.0.0"
+  },
+  "dependencies": {
+    "commander": "^13.1.0"
   }
 }

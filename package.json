@@ -1,0 +1,30 @@
+{
+  "name": "pjman",
+  "version": "0.0.0",
+  "description": "This project is a package management tool for JavaScript applications. It helps developers manage their dependencies, analyze package usage, and perform operations such as updating or deleting packages from both the terminal and the UI. Keep your package.json is fine",
+  "main": "main.js",
+  "scripts": {
+    "start": "node main.js",
+    "test": "test",
+    "release:bootstrap": "node bin/bootstrap.js",
+    "release:pr": "node bin/create-pr.js",
+    "release:release": "node bin/github-release.js"
+  },
+  "type": "module",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/AvdienkoSergey/pjman.git"
+  },
+  "keywords": [
+    "package.json"
+  ],
+  "author": "AvdienkoSA",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/AvdienkoSergey/pjman/issues"
+  },
+  "homepage": "https://github.com/AvdienkoSergey/pjman#readme",
+  "devDependencies": {
+    "release-please": "^17.0.0"
+  }
+}

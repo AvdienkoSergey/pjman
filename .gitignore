@@ -1,0 +1,17 @@
+#Dependencies
+node_modules
+
+#Environment variables
+.env
+
+#Editor directories and files
+.vscode/*
+.idea/*
+
+#Cache
+.npm
+.eslintcache
+
+#Logs
+logs
+*.log

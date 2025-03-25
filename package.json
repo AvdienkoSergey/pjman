@@ -25,6 +25,7 @@
   },
   "homepage": "https://github.com/AvdienkoSergey/pjman#readme",
   "devDependencies": {
+    "dotenv": "^16.4.7",
     "release-please": "^17.0.0"
   }
 }

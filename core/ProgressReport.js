@@ -61,18 +61,20 @@ class ProgressReport extends EventEmitter {
                 message: pluginWorkProgress.getMessage(),
                 percentage: pluginWorkProgress.getPercent()
             });
-
-            if (pluginWorkProgress.getCurrent() === pluginWorkProgress.getTotal()) {
-                this.emit('plugin:complete', {
-                    plugin,
-                    message: `Completed ${plugin}`,
-                    percentage: pluginWorkProgress.getPercent()
-                });
-            }
         }
     }
 
-    complete(result) {
+    complete(result, plugin = 'default') {
+        const pluginWorkProgress = this.pluginsWorkProgress.get(plugin);
+        if (pluginWorkProgress) {
+            this.emit('plugin:complete', {
+                plugin,
+                message: `Completed ${plugin}`,
+                percentage: 100
+            });
+        }
+        this.pluginsWorkProgress.delete(plugin);
+        console.log("progress result", this.pluginsWorkProgress)
         this.emit('completed', result);
     }
 

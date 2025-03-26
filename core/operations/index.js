@@ -1,22 +1,23 @@
 import PluginLoader from "./PluginLoader.js";
-import makeBackup from "./makeBackup.js";
-import { resolve } from "node:path";
+import backup from "./backup.js";
+import dependencyAnalyzer from "./dependencyAnalyzer.js";
 import { readFileSync } from "node:fs";
+import {
+  pjmanDir,
+  pluginsDir,
+  configFile,
+} from "../../utils/paths.js"
 
 const isTest = process.env.NODE_ENV === "test";
 
-const getPjmanDir = () => {
-  return isTest ? process.env.PJMAN_DIR : ".pjman";
+function getPjmanDir() {
+  return isTest ? process.env.PJMAN_TEST_DIR : pjmanDir;
 };
-const getDirectory = () => {
-  return isTest
-    ? `${PJMAN_DIR}/plugins`
-    : resolve(process.cwd(), `.pjman`, `plugins`);
+function getDirectory() {
+  return isTest ? `${PJMAN_DIR}/plugins` : pluginsDir;
 };
-const getConfigPath = () => {
-  return isTest
-    ? `${PJMAN_DIR}/config.json`
-    : resolve(process.cwd(), `.pjman`, `config.json`);
+function getConfigPath() {
+  return isTest ? `${PJMAN_DIR}/config.json` : configFile;
 };
 
 const PJMAN_DIR = getPjmanDir();
@@ -39,5 +40,6 @@ const plugins = await loader.loadPlugins();
 
 export default {
   ...plugins,
-  makeBackup,
+  backup,
+  analyze: dependencyAnalyzer
 };

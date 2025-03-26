@@ -1,14 +1,52 @@
 import { Command } from "./Command.js";
 import { CommandError } from "../errors/CommandError.js";
+import { readFileSync } from "node:fs";
+import { writeFile } from "node:fs/promises";
+import { commandsFile } from "../utils/paths.js";
 
 class Commander {
   constructor(operations) {
     this.commands = [];
     this.operations = operations;
+    this.#restoreCommands();
   }
 
-  add(command) {
+  #add(command) {
     this.commands.push(command);
+    this.#saveCommands();
+  }
+
+  #restoreCommands() {
+    const commands = readFileSync(commandsFile, "utf8");
+    const rawCommands = JSON.parse(commands);
+    this.commands = rawCommands.map(cmd => {
+      const { execute, undo } = this.operations[cmd.operation];
+      const command = new Command(cmd.target, cmd.operation, execute, undo);
+      command.id = cmd.id;
+      command.timestamp = cmd.timestamp;
+      return command;
+    });
+  }
+
+  #saveCommands() {
+    writeFile(commandsFile, JSON.stringify(this.commands, null, 2));
+  }
+
+   /**
+   * Deletes a command by ID
+   * @param {string} commandId - ID of the command to delete
+   */
+   deleteCommand(commandId) {
+    const commandIndex = this.commands.findIndex(cmd => cmd.id === commandId);
+    
+    if (commandIndex === -1) {
+      const error = CommandError.NotFound(commandId);
+      error.log();
+      throw error;
+    }
+    
+    this.commands.splice(commandIndex, 1);
+    this.#saveCommands();
   }
 
   /**
@@ -21,7 +59,7 @@ class Commander {
     try {
       const { execute, undo } = this.operations[operation];
       const cmd = new Command(target, operation, execute, undo);
-      this.add(cmd);
+      this.#add(cmd);
       return void cmd.execute();
     } catch (error) {
       const cmd = new Command(
@@ -39,22 +77,31 @@ class Commander {
   async undo(count = 0, commandId = null) {
     if (count === 0 && commandId === null) {
       const lastCommand = this.commands.pop();
+      console.log("lastCommand", lastCommand, this.commands)
       if (!lastCommand) {
         const error = CommandError.NoCommandsToUndo();
         error.log();
         throw error;
       }
-      return void (await lastCommand.undo());
+      await lastCommand.undo(lastCommand).then(() => {
+        console.log("undo", this.commands)
+        this.#saveCommands();
+      });
+      return;
     }
 
     if (commandId !== null) {
-      const cmd = this.commands.find((cmd) => cmd.id === commandId);
-      if (!cmd) {
+      const commandIndex = this.commands.findIndex((cmd) => cmd.id === commandId);
+      if (commandIndex === -1) {
         const error = CommandError.NotFound(commandId);
         error.log();
         throw error;
       }
-      return void (await cmd.undo());
+      const cmd = this.commands[commandIndex];
+      await cmd.undo();
+      this.commands.splice(commandIndex, 1);
+      this.#saveCommands();
+      return;
     }
 
     const undoPromises = [];

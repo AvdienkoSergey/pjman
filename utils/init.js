@@ -1,6 +1,13 @@
-import { mkdir, writeFile } from "node:fs/promises";
-import { resolve, join } from "node:path";
-import { existsSync } from "node:fs";
+import { createDirectoryIfNotExists, createFileIfNotExists } from "./fs.js"
+import {
+  pjmanDir,
+  pluginsDir,
+  historyDir,
+  backupDir,
+  configFile,
+  defaultPluginFile,
+  commandsFile
+} from "./paths.js"
 
 const DEFAULT_CONFIG = {
   sandbox: {
@@ -10,6 +17,7 @@ const DEFAULT_CONFIG = {
     timeout: 5000,
     displayErrors: true,
   },
+  dependencies: []
 };
 
 const DEFAULT_PLUGIN = `({
@@ -24,42 +32,62 @@ const DEFAULT_PLUGIN = `({
 });
 `;
 
-async function createDirectoryIfNotExists(path) {
-  if (!existsSync(path)) {
-    await mkdir(path, { recursive: true });
-  }
-}
+const DEFAULT_COMMANDS = []
 
 async function init() {
   try {
-    const pjmanDir = resolve(process.cwd(), ".pjman");
-    const pluginsDir = join(pjmanDir, "plugins");
 
-    // Create directories
-    await createDirectoryIfNotExists(pjmanDir);
-    await createDirectoryIfNotExists(pluginsDir);
+    await createDirectoryIfNotExists(pjmanDir)
+      .then((result) => result
+        ? console.log(`📁 Created directory: ${pjmanDir}`)
+        : null
+      )
 
-    // Create config.json
-    const configPath = join(pjmanDir, "config.json");
-    if (!existsSync(configPath)) {
-      await writeFile(
-        configPath,
-        JSON.stringify(DEFAULT_CONFIG, null, 2),
-        "utf8"
-      );
-    }
+    await createDirectoryIfNotExists(pluginsDir)
+      .then((result) => result
+        ? console.log(`📁 Created directory: ${pluginsDir}`)
+        : null
+      )
 
-    // Create test plugin
-    const testPluginPath = join(pluginsDir, "default.js");
-    if (!existsSync(testPluginPath)) {
-      await writeFile(testPluginPath, DEFAULT_PLUGIN, "utf8");
-    }
+    await createDirectoryIfNotExists(historyDir)
+      .then((result) => result
+        ? console.log(`📁 Created directory: ${historyDir}`)
+        : null
+      )
+    
+    await createDirectoryIfNotExists(backupDir)
+      .then((result) => result
+        ? console.log(`📁 Created directory: ${backupDir}`)
+        : null
+      )
 
-    console.log("✨ Project initialized successfully!");
-    console.log(`📁 Created directory: ${pjmanDir}`);
-    console.log(`📁 Created directory: ${pluginsDir}`);
-    console.log(`📄 Created file: ${configPath}`);
-    console.log(`📄 Created file: ${testPluginPath}`);
+    await createFileIfNotExists(
+      configFile,
+      JSON.stringify(DEFAULT_CONFIG, null, 2)
+    )
+      .then((result) => result
+        ? console.log(`📁 Created file: ${configFile}`)
+        : null
+      )
+
+    await createFileIfNotExists(
+      defaultPluginFile,
+      DEFAULT_PLUGIN
+    )
+      .then((result) => result
+        ? console.log(`📁 Created file: ${defaultPluginFile}`)
+        : null
+      )
+
+    await createFileIfNotExists(
+      commandsFile,
+      JSON.stringify(DEFAULT_COMMANDS, null, 2)
+    )
+      .then((result) => result
+        ? console.log(`📁 Created file: ${commandsFile}`)
+        : null
+      )
+
   } catch (error) {
     console.error("❌ Failed to initialize project:", error.message);
     process.exit(1);

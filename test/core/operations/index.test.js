@@ -35,7 +35,7 @@ describe("operations/index", () => {
     process.cwd = () => TEST_DIR;
 
     // Clear require cache
-    process.env.PJMAN_DIR = TEST_DIR;
+    process.env.PJMAN_TEST_DIR = TEST_DIR;
   });
 
   afterEach(async () => {
@@ -51,9 +51,9 @@ describe("operations/index", () => {
     assert.strictEqual(typeof operations.test.execute, "function");
     assert.strictEqual(typeof operations.test.undo, "function");
 
-    assert.ok(operations.makeBackup, "Should include makeBackup operation");
-    assert.strictEqual(typeof operations.makeBackup.execute, "function");
-    assert.strictEqual(typeof operations.makeBackup.undo, "function");
+    assert.ok(operations.backup, "Should include backup operation");
+    assert.strictEqual(typeof operations.backup.execute, "function");
+    assert.strictEqual(typeof operations.backup.undo, "function");
   });
 
   it("should provide sandbox from config", async () => {

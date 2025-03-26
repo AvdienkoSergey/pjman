@@ -8,8 +8,9 @@ import { PluginError } from "../../errors/PluginError.js";
 export default class PluginLoader extends Loader {
   /**
    * @param {string} directory
-   * @param {import('../../lib/Loader').LoaderSandbox} [sandbox={}]
-   * @param {import('../../lib/Loader').LoaderOptions} [options={}]
+   * @param {object} sandbox
+   * @param {object} options
+   * @param {boolean} isTest
    */
   constructor(directory, sandbox = {}, options = {}, isTest = false) {
     super(sandbox, options);

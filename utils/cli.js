@@ -1,7 +1,7 @@
 async function executePlugin(commander, pluginName, target) {
     try {
         await commander.execute(pluginName, target);
-        commander.showCommands();
+        // commander.showCommands();
     } catch (error) {
         console.error(`Failed to execute plugin '${pluginName}':`, error.message);
     }

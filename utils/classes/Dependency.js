@@ -107,7 +107,8 @@ export class Dependency {
         safeUpdate: this.safeUpdateVersion || '-',
         majorUpdate: this.majorUpdateVersion || '-',
         security: this.getSecurityRisk(),
-        license: this.license || 'Unknown',
+        link: this.repositoryUrl || '-',
+        license: this.license || '-',
         type: this.type
       };
     }

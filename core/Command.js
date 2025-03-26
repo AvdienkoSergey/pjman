@@ -1,5 +1,6 @@
 import { randomUUID } from "node:crypto";
 import { CommandError } from "../errors/CommandError.js";
+import { progressReport } from "./ProgressReport.js";
 
 class Command {
   #execute;
@@ -10,6 +11,7 @@ class Command {
     this.timestamp = this.#localTime()
     this.target = target;
     this.operation = operation;
+    this.progress = progressReport;
     this.#execute = execute;
     this.#undo = undo;
   }
@@ -20,7 +22,7 @@ class Command {
 
   async execute() {
     try {
-      return await this.#execute(this);
+      return await this.#execute(this, this.progress);
     } catch (error) {
       const commandError = CommandError.ExecutionFailed(this, error);
       commandError.log();
@@ -30,7 +32,7 @@ class Command {
 
   async undo(cmd) {
     try {
-      return await this.#undo(cmd);
+      return await this.#undo(cmd, this.progress);
     } catch (error) {
       const commandError = CommandError.ExecutionFailed(this, error);
       commandError.log();

@@ -6,18 +6,8 @@ import { promisify } from 'node:util';
 import { globby } from 'globby';
 import { configFile } from '../../utils/paths.js';
 import { Dependency } from '../../utils/classes/Dependency.js';
-import ProgressReport from '../../utils/classes/ProgressReport.js';
-
-// // CLI usage
-// npx pjman plugin -n analyze
-
-// // Programmatic usage
-// const result = await analyzer.execute(cmd, (progress) => {
-//     console.log(`${progress.percentage}% - ${progress.message}`);
-// });
 
 const execAsync = promisify(exec);
-
 
 async function analyzePackageJson(filePath) {
     const content = await readFile(filePath, 'utf-8');
@@ -81,106 +71,122 @@ async function analyzeSecurity(name) {
     }
 }
 
-async function analyzeDependencies(dependencies, type = 'production', progress) {
-    const files = await globby(['**/*.js', '**/*.ts', '**/*.jsx', '**/*.tsx', '!node_modules/**']);
-    const excludedDeps = await getExcludedDependencies();
-    const deps = [];
-
-    const totalSteps = Object.keys(dependencies).length;
-    progress.setTotal(totalSteps);
-
-    for (const [name, version] of Object.entries(dependencies)) {
-        progress.updateProgress(`Analyzing ${name}...`);
-        const dep = new Dependency(name, version, type);
-        
-        // Check if dependency is excluded
-        if (excludedDeps.has(name)) {
-            dep.markAsUsed();
-            deps.push(dep);
-            progress.increment(`Skipped analysis of ${name} (excluded)`);
-            continue;
+async function analyzeUsage(name, files) {
+    let usageCount = 0;
+    for (const file of files) {
+        const content = await readFile(file, 'utf-8');
+        if (content.includes(`from '${name}'`) ||
+            content.includes(`from "${name}"`) ||
+            content.includes(`require('${name}')`) ||
+            content.includes(`require("${name}")`)) {
+            usageCount++;
         }
+    }
+    return usageCount;
+}
 
-        progress.updateProgress(`Checking usage of ${name}...`);
-        // Check usage in files
-        let usageCount = 0;
-        for (const file of files) {
-            const content = await readFile(file, 'utf-8');
-            if (content.includes(`from '${name}'`) ||
-                content.includes(`from "${name}"`) ||
-                content.includes(`require('${name}')`) ||
-                content.includes(`require("${name}")`)) {
-                usageCount++;
-            }
-        }
+async function checkUpdates(name, currentVersion) {
+    try {
+        const { stdout } = await execAsync(`npm view ${name} version`);
+        const latestVersion = stdout.trim();
+        const cleanVersion = currentVersion.replace(/[\^~]/g, '');
 
-        if (usageCount > 0) {
-            dep.markAsUsed(usageCount);
-        }
-
-        progress.updateProgress(`Checking updates for ${name}...`);
-        // Check for updates
-        try {
-            const { stdout } = await execAsync(`npm view ${name} version`);
-            const latestVersion = stdout.trim();
-            const currentVersion = version.replace(/[\^~]/g, '');
-
-            if (latestVersion !== currentVersion) {
-                const [currentMajor] = currentVersion.split('.');
-                const [latestMajor] = latestVersion.split('.');
-                
-                if (currentMajor === latestMajor) {
-                    dep.setAvailableUpdates(latestVersion, null);
-                } else {
-                    dep.setAvailableUpdates(null, latestVersion);
-                }
-            }
-        } catch (error) {
-            console.error(`Failed to check updates for ${name}:`, error);
-        }
-
-        progress.updateProgress(`Checking security for ${name}...`);
-        // Security check with modified approach
-        const vulnerabilities = await analyzeSecurity(name);
-        vulnerabilities.forEach(vuln => dep.addVulnerability(vuln));
-
-        progress.updateProgress(`Getting license info for ${name}...`);
-        // Get license information
-        try {
-            const { stdout } = await execAsync(`npm view ${name} license repository.url`);
-            const lines = stdout.trim().split('\n');
+        if (latestVersion !== cleanVersion) {
+            const [currentMajor] = cleanVersion.split('.');
+            const [latestMajor] = latestVersion.split('.');
             
-            lines.forEach(line => {
-                if (!dep.license && line && !line.includes('repository')) {
-                    dep.license = line.trim();
-                }
-                
-                if (!dep.repositoryUrl && line.includes('http')) {
-                    dep.repositoryUrl = line.trim()
-                        .replace('git+', '')
-                        .replace('.git', '');
-                }
-            });
-        } catch (error) {
-            console.error(`Failed to analyze license for ${name}:`, error);
+            return {
+                hasSafeUpdate: currentMajor === latestMajor,
+                latestVersion
+            };
         }
+    } catch (error) {
+        console.error(`Failed to check updates for ${name}:`, error);
+    }
+    return null;
+}
 
-        deps.push(dep);
-        progress.increment(`Completed analysis of ${name}`);
+async function getLicenseInfo(name) {
+    try {
+        const { stdout } = await execAsync(`npm view ${name} license repository.url`);
+        const lines = stdout.trim().split('\n');
+        const info = { license: null, repositoryUrl: null };
+        
+        lines.forEach(line => {
+            if (!info.license && line && !line.includes('repository')) {
+                info.license = line.trim();
+            }
+            if (!info.repositoryUrl && line.includes('http')) {
+                info.repositoryUrl = line.trim()
+                    .replace('git+', '')
+                    .replace('.git', '');
+            }
+        });
+        return info;
+    } catch (error) {
+        console.error(`Failed to analyze license for ${name}:`, error);
+        return { license: null, repositoryUrl: null };
+    }
+}
+
+async function analyzeSingleDependency(name, version, type, files, excludedDeps) {
+    const dep = new Dependency(name, version, type);
+    
+    // Проверка исключений
+    if (excludedDeps.has(name)) {
+        dep.markAsUsed();
+        return dep;
     }
 
+    // Анализ использования
+    const usageCount = await analyzeUsage(name, files);
+    if (usageCount > 0) {
+        dep.markAsUsed(usageCount);
+    }
+
+    // Проверка обновлений
+    const updates = await checkUpdates(name, version);
+    if (updates) {
+        dep.setAvailableUpdates(
+            updates.hasSafeUpdate ? updates.latestVersion : null,
+            updates.hasSafeUpdate ? null : updates.latestVersion
+        );
+    }
+
+    // Проверка безопасности
+    const vulnerabilities = await analyzeSecurity(name);
+    vulnerabilities.forEach(vuln => dep.addVulnerability(vuln));
+
+    // Информация о лицензии
+    const licenseInfo = await getLicenseInfo(name);
+    dep.license = licenseInfo.license?.split("'")[1];
+    dep.repositoryUrl = licenseInfo.repositoryUrl?.split("'")[1];
+    return dep;
+}
+
+async function analyzeDependencies(dependencies, type = 'production', progress, plugin) {
+    const files = await globby(['**/*.js', '**/*.ts', '**/*.jsx', '**/*.tsx', '!node_modules/**']);
+    const excludedDeps = await getExcludedDependencies();
+    const totalDeps = Object.keys(dependencies).length;
+    const stepSize = Math.floor(50 / totalDeps);
+
+    const analysisPromises = Object.entries(dependencies).map(async ([name, version]) => {
+        const dep = await analyzeSingleDependency(name, version, type, files, excludedDeps);
+        // Обновляем прогресс после завершения каждого анализа
+        progress.increment(`Analyzing ${name}`, stepSize, plugin);
+        return dep;
+    });
+
+    const deps = await Promise.all(analysisPromises);
+    
     return deps;
 }
 
-async function generateReport(packageJsonPath, onProgress) {
-    const progress = new ProgressReport(onProgress);
+async function generateReport(packageJsonPath, progress, plugin) {
     const { dependencies, devDependencies } = await analyzePackageJson(packageJsonPath);
     
-    progress.updateProgress('Analyzing production dependencies...');
-    const prodDeps = await analyzeDependencies(dependencies, 'production', progress);
-    
-    progress.updateProgress('Analyzing development dependencies...');
-    const devDeps = await analyzeDependencies(devDependencies, 'development', progress);
+    const prodDeps = await analyzeDependencies(dependencies, 'production', progress, plugin);
+    const devDeps = await analyzeDependencies(devDependencies, 'development', progress, plugin);
 
     return {
         production: prodDeps,
@@ -189,47 +195,35 @@ async function generateReport(packageJsonPath, onProgress) {
 }
 
 export default {
-    execute: async (cmd, onProgress) => {
+    execute: async (cmd, progress) => {
         try {
+            progress.start(cmd.operation);
+
             const packageJsonPath = resolve(cwd(), 'package.json');
-            const report = await generateReport(packageJsonPath, onProgress);
+            const report = await generateReport(packageJsonPath, progress, cmd.operation);
             
             const result = {
-                success: true,
-                data: {
-                    production: report.production.map(dep => dep.toDisplayObject()),
-                    development: report.development.map(dep => dep.toDisplayObject())
-                },
-                summary: {
-                    total: report.production.length + report.development.length,
-                    unused: report.production.filter(d => !d.isUsed).length + 
-                           report.development.filter(d => !d.isUsed).length,
-                    outdated: report.production.filter(d => d.hasUpdates()).length +
-                             report.development.filter(d => d.hasUpdates()).length,
-                    vulnerable: report.production.filter(d => d.getSecurityRisk() !== 'none').length +
-                               report.development.filter(d => d.getSecurityRisk() !== 'none').length
-                }
+                production: report.production.map(dep => dep.toDisplayObject()),
+                development: report.development.map(dep => dep.toDisplayObject())
             };
 
-            // If running from CLI, print the report
-            if (!onProgress) {
-                console.log('\n📦 Dependency Analysis Report\n');
-                console.log('Production Dependencies:');
-                console.table(result.data.production);
-                console.log('\nDevelopment Dependencies:');
-                console.table(result.data.development);
-            }
+            console.table([...result.production, ...result.development]);
+            console.log('You can call other useful plugins:\n')
+            console.log('🔄 npx pjman -n safeupdate (Safely update library versions)')
+            console.log('🔄 npx pjman -n majorupdate <name> (Update library to the latest major version)')
+            console.log('🔄 npx pjman -n delete <name> (Delete library from package.json)')
+            console.log('\n')
 
-            return result;
+            progress.complete(result);
+
+            return void 0;
         } catch (error) {
-            return {
-                success: false,
-                error: error.message,
-                details: error.stack
-            };
+            console.log(error)
+            progress.error(error);
+            throw error;
         }
     },
     undo: async () => {
-        return { success: true };
+        return void 0;
     },
 }; 

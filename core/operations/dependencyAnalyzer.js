@@ -214,9 +214,9 @@ export default {
             console.log('🔄 npx pjman -n delete <name> (Delete library from package.json)')
             console.log('\n')
 
-            progress.complete(result);
+            progress.complete(result, cmd.operation);
 
-            return void 0;
+            return result;
         } catch (error) {
             console.log(error)
             progress.error(error);

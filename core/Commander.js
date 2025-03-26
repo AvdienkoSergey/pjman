@@ -60,7 +60,7 @@ class Commander {
       const { execute, undo } = this.operations[operation];
       const cmd = new Command(target, operation, execute, undo);
       this.#add(cmd);
-      return void cmd.execute();
+      return await cmd.execute();
     } catch (error) {
       const cmd = new Command(
         target,
@@ -77,14 +77,12 @@ class Commander {
   async undo(count = 0, commandId = null) {
     if (count === 0 && commandId === null) {
       const lastCommand = this.commands.pop();
-      console.log("lastCommand", lastCommand, this.commands)
       if (!lastCommand) {
         const error = CommandError.NoCommandsToUndo();
         error.log();
         throw error;
       }
       await lastCommand.undo(lastCommand).then(() => {
-        console.log("undo", this.commands)
         this.#saveCommands();
       });
       return;

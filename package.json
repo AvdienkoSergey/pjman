@@ -52,6 +52,7 @@
   },
   "dependencies": {
     "commander": "^13.1.0",
-    "globby": "^14.1.0"
+    "globby": "^14.1.0",
+    "ws": "^8.18.1"
   }
 }

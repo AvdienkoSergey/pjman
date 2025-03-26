@@ -17,6 +17,10 @@ const DEFAULT_CONFIG = {
     timeout: 5000,
     displayErrors: true,
   },
+  ports: {
+    static: 4000,
+    ws: 4001
+  },
   dependencies: []
 };
 

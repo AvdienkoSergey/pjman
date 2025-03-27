@@ -19,7 +19,7 @@ class Commander {
   #restoreCommands() {
     const commands = readFileSync(commandsFile, "utf8");
     const rawCommands = JSON.parse(commands);
-    this.commands = rawCommands.map(cmd => {
+    this.commands = rawCommands.map((cmd) => {
       const { execute, undo } = this.operations[cmd.operation];
       const command = new Command(cmd.target, cmd.operation, execute, undo);
       command.id = cmd.id;
@@ -32,19 +32,19 @@ class Commander {
     writeFile(commandsFile, JSON.stringify(this.commands, null, 2));
   }
 
-   /**
+  /**
    * Deletes a command by ID
    * @param {string} commandId - ID of the command to delete
    */
-   deleteCommand(commandId) {
-    const commandIndex = this.commands.findIndex(cmd => cmd.id === commandId);
-    
+  deleteCommand(commandId) {
+    const commandIndex = this.commands.findIndex((cmd) => cmd.id === commandId);
+
     if (commandIndex === -1) {
       const error = CommandError.NotFound(commandId);
       error.log();
       throw error;
     }
-    
+
     this.commands.splice(commandIndex, 1);
     this.#saveCommands();
   }
@@ -89,7 +89,9 @@ class Commander {
     }
 
     if (commandId !== null) {
-      const commandIndex = this.commands.findIndex((cmd) => cmd.id === commandId);
+      const commandIndex = this.commands.findIndex(
+        (cmd) => cmd.id === commandId
+      );
       if (commandIndex === -1) {
         const error = CommandError.NotFound(commandId);
         error.log();

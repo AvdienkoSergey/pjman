@@ -14,7 +14,7 @@ npx pjman init
 
 The command will create a directory `.pjman` for you in the root of the project
 
-```json
+```
 /.pjman
     ├─── plugins
     │       └─── default.js
@@ -23,6 +23,7 @@ The command will create a directory `.pjman` for you in the root of the project
     │       └─── commands.json
     └─── config.json
 ```
+
 - `plugins/default.js` - Contains an example of a plugin. [Learn more about plugins](./docs/settings-plugins.md)
 - `backup` - An empty folder that will be used to store the version of the target file. For example, you can call the command `pjman -n backup -t package.json` and the current version of the file will be saved. Providing an opportunity to roll back to it if necessary
 - `history/commands.json` - The file contains the history of the commands that you have called. Provides the ability to work with the execution and rollback of commands. [Learn more about performing and rolling back operations](./docs/settings-rollback.md)

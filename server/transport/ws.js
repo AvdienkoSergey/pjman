@@ -1,5 +1,5 @@
 import { WebSocketServer } from 'ws';
-import { executePlugin, listAvailablePlugins, handleUndo, handleDelete } from "../../utils/cli.js";
+import { executePlugin, handleUndo, handleDelete } from "../../utils/cli.js";
 
 class WsTransport {
     constructor(commander, progress, port, console) {

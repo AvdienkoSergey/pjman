@@ -24,6 +24,8 @@
     "utils/",
     "lib/",
     "errors/",
+    "server/",
+    "docs/",
     "LICENSE",
     "README.md"
   ],

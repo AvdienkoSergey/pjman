@@ -113,6 +113,11 @@ class Commander {
   showCommands() {
     console.table(this.commands);
   }
+
+  clear() {
+    this.commands = [];
+    this.#saveCommands();
+  }
 }
 
 export { Commander };

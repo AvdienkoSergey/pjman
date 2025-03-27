@@ -37,8 +37,6 @@ class StaticServer {
         const url = req.url === '/' ? '/index.html' : req.url;
         const filePath = path.join(this.root, url);
 
-        console.log({start: filePath.startsWith(path.basename(this.root))});
-
         if (!filePath.startsWith(path.basename(this.root))) {
             res.statusCode = 404;
             return void res.end('"File is not found"');

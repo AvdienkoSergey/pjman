@@ -52,7 +52,7 @@ class WsTransport {
                 }
                 case 'LIST_PLUGINS': {
                     console.log(`${ip} requesting plugin list`);
-                    result = await listAvailablePlugins(this.commander.operations);
+                    result = this.commander.operations
                     break;
                 }
                 case 'UNDO_COMMAND': {

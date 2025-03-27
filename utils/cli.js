@@ -7,11 +7,9 @@ async function executePlugin(commander, pluginName, target) {
     }
 }
 
-async function listAvailablePlugins(operations) {
-    console.log("Available plugins:");
-    Object.keys(operations).forEach(plugin => {
-        console.log(`  - ${plugin}`);
-    });
+async function handleClear(commander) {
+    await commander.clear();
+    commander.showCommands();
 }
 
 async function handleUndo(commander, commandId) {
@@ -34,4 +32,4 @@ async function handleDelete(commander, commandId) {
     }
 }
 
-export { executePlugin, listAvailablePlugins, handleUndo, handleDelete };
+export { executePlugin, handleUndo, handleDelete, handleClear };

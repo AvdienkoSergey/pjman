@@ -7,6 +7,7 @@ node_modules
 #Editor directories and files
 .vscode/*
 .idea/*
+.cursor
 
 #Cache
 .npm
@@ -19,3 +20,4 @@ logs
 
 #App
 .pjman/
+pkg

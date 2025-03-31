@@ -74,7 +74,6 @@ class ProgressReport extends EventEmitter {
             });
         }
         this.pluginsWorkProgress.delete(plugin);
-        console.log("progress result", this.pluginsWorkProgress)
         this.emit('completed', result);
     }
 

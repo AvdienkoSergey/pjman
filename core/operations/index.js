@@ -27,11 +27,12 @@ const configPath = getConfigPath();
 const config = JSON.parse(readFileSync(configPath, "utf8"));
 
 const sandbox = {};
-Object.keys(config.sandbox).forEach((key) => {
+
+for (const key of Object.keys(config.sandbox)) {
   if (config.sandbox[key] === true) {
-    sandbox[key] = global[key];
+    sandbox[key] = await import(`${key}`);
   }
-});
+}
 const options = config.options;
 
 const loader = new PluginLoader(directory, sandbox, options, isTest);
@@ -41,5 +42,5 @@ const plugins = await loader.loadPlugins();
 export default {
   ...plugins,
   backup,
-  analyze: dependencyAnalyzer
+  analyze: dependencyAnalyzer,
 };

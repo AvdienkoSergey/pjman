@@ -94,7 +94,7 @@ export class Dependency {
         return 4;
       case "high":
         return 3;
-      case "medium":
+      case "moderate":
         return 2;
       case "low":
         return 1;

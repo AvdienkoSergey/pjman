@@ -33,49 +33,30 @@ async function getExcludedDependencies() {
 }
 
 async function analyzeSecurity(name) {
+  let _stdout = null;
   try {
-    // Try to use npm audit for the package
-    const { stdout } = await execAsync("npm audit --json", {
+    const { stdout } = await execAsync("npm audit --json --registry=https://registry.npmjs.org/", {
       env: { ...process.env, NODE_TLS_REJECT_UNAUTHORIZED: "0" },
     });
-    const auditData = JSON.parse(stdout);
-
-    const vulnerabilities = [];
-    if (auditData.vulnerabilities && auditData.vulnerabilities[name]) {
-      const info = auditData.vulnerabilities[name];
-      vulnerabilities.push({
-        id: info.cves?.[0] || `NSWG-${info.id}`,
-        title: info.title,
-        description: info.overview,
-        severity: info.severity,
-        fixedInVersion: info.fixAvailable?.version || null,
-        url: info.url || null,
-      });
-    }
-    return vulnerabilities;
+    _stdout = stdout;
   } catch (error) {
-    // If npm audit fails, try to get security data from npm view
-    try {
-      const { stdout } = await execAsync(
-        `npm view ${name} security-holding-pond`
-      );
-      if (stdout.trim()) {
-        return [
-          {
-            id: "SECURITY-WARNING",
-            title: "Security Advisory",
-            description: "Package has security advisories",
-            severity: "medium",
-            fixedInVersion: null,
-            url: null,
-          },
-        ];
-      }
-    } catch (e) {
-      // Ignore errors from fallback method
+    if (error?.stdout) {
+      const { stdout } = error;
+      _stdout = stdout;
+    } else {
+      return []
     }
-    return [];
   }
+
+  const auditData = JSON.parse(_stdout);
+  const vulnerabilitiesMap = new Map();
+
+  if (auditData?.vulnerabilities) {
+    Object.entries(auditData.vulnerabilities).forEach(([key, value]) => {
+      vulnerabilitiesMap.set(key, value)
+    })
+  }
+  return vulnerabilitiesMap;
 }
 
 async function analyzeUsage(name, files) {
@@ -171,10 +152,6 @@ async function analyzeSingleDependency(
     );
   }
 
-  // Проверка безопасности
-  const vulnerabilities = await analyzeSecurity(name);
-  vulnerabilities.forEach((vuln) => dep.addVulnerability(vuln));
-
   // Информация о лицензии
   const licenseInfo = await getLicenseInfo(name);
   dep.license = licenseInfo.license?.split("'")[1];
@@ -237,6 +214,25 @@ async function generateReport(packageJsonPath, progress, plugin) {
     plugin
   );
 
+  // Проверка безопасности
+  const vulnerabilitiesMap = await analyzeSecurity();
+
+  if (vulnerabilitiesMap.size > 0) {
+    return {
+      production: prodDeps.map((dep) => {
+        if (vulnerabilitiesMap.has(dep.name)) {
+          dep.addVulnerability(vulnerabilitiesMap.get(dep.name))
+        }
+        return dep;
+      }),
+      development: devDeps.map((dep) => {
+        if (vulnerabilitiesMap.has(dep.name)) {
+          dep.addVulnerability(vulnerabilitiesMap.get(dep.name))
+        }
+        return dep;
+      }),
+    }
+  }
   return {
     production: prodDeps,
     development: devDeps,
@@ -261,8 +257,8 @@ export default {
           report.production.length > 0
             ? report.production[0]
             : report.development.length > 0
-            ? report.development[0]
-            : null;
+              ? report.development[0]
+              : null;
 
         if (!dep) {
           return [];
